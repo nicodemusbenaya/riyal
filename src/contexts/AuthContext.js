@@ -151,39 +151,78 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // const updateProfile = async (profileData) => {
+  //   try {
+  //     // Format skill menjadi string sesuai backend API
+  //     let skillString = "";
+  //     if (Array.isArray(profileData.skills)) {
+  //       skillString = profileData.skills.join(',');
+  //     } else if (typeof profileData.skills === 'string') {
+  //       skillString = profileData.skills;
+  //     }
+
+  //     const payload = {
+  //       name: profileData.name,
+  //       birthdate: profileData.birthdate,
+  //       role: profileData.role,
+  //       skill: skillString,
+  //       pict: profileData.avatarUrl || ""
+  //     };
+
+  //     console.log("Sending profile payload:", payload); // Debug log
+
+  //     if (user?.profileComplete) {
+  //        await api.put('/profile/', payload);
+  //     } else {
+  //        await api.post('/profile/', payload);
+  //     }
+
+  //     await fetchUserProfile(); // Refresh data
+  //     return { success: true };
+  //   } catch (error) {
+  //     console.error("Update profile error:", error);
+  //     throw error;
+  //   }
+  // };
+
   const updateProfile = async (profileData) => {
-    try {
-      // Format skill menjadi string sesuai backend API
-      let skillString = "";
-      if (Array.isArray(profileData.skills)) {
-        skillString = profileData.skills.join(',');
-      } else if (typeof profileData.skills === 'string') {
-        skillString = profileData.skills;
-      }
-
-      const payload = {
-        name: profileData.name,
-        birthdate: profileData.birthdate,
-        role: profileData.role,
-        skill: skillString,
-        pict: profileData.avatarUrl || ""
-      };
-
-      console.log("Sending profile payload:", payload); // Debug log
-
-      if (user?.profileComplete) {
-         await api.put('/profile/', payload);
-      } else {
-         await api.post('/profile/', payload);
-      }
-
-      await fetchUserProfile(); // Refresh data
-      return { success: true };
-    } catch (error) {
-      console.error("Update profile error:", error);
-      throw error;
+  try {
+    let skillString = "";
+    if (Array.isArray(profileData.skills)) {
+      skillString = profileData.skills.join(',');
+    } else if (typeof profileData.skills === 'string') {
+      skillString = profileData.skills;
     }
-  };
+
+    const payload = {
+      name: profileData.name,
+      birthdate: profileData.birthdate,
+      role: profileData.role,
+      skill: skillString,
+      pict: profileData.avatarUrl || ""
+    };
+
+    console.log("Sending profile payload:", payload);
+
+    if (user?.profileComplete) {
+      await api.put('/profile/', payload);
+    } else {
+      await api.post('/profile/', payload);
+
+      // 🔥 PENTING: SET STATUS PROFILE SUDAH ADA
+      setUser(prev => ({
+        ...prev,
+        profileComplete: true
+      }));
+    }
+
+    await fetchUserProfile();
+    return { success: true };
+  } catch (error) {
+    console.error("Update profile error:", error);
+    throw error;
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');

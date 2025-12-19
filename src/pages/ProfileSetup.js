@@ -79,59 +79,114 @@ const ProfileSetup = () => {
     });
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   e.stopPropagation(); // Hentikan event bubbling
+    
+  //   // GUARD: Jika sedang submitting (terkunci), hentikan eksekusi segera!
+  //   if (isSubmitting.current) return;
+
+  //   if (!formData.name || !formData.birthdate || !formData.role || formData.skills.length === 0) {
+  //     toast({
+  //       title: 'Data tidak lengkap',
+  //       description: 'Silakan lengkapi semua field.',
+  //       variant: 'destructive'
+  //     });
+  //     return;
+  //   }
+    
+  //   // KUNCI PINTU: Set ref true agar klik berikutnya ditolak
+  //   isSubmitting.current = true;
+  //   setLoading(true);
+
+  //   try {
+  //     let avatarUrl = "";
+      
+  //     // 1. Upload avatar dulu jika ada file baru
+  //     if (avatarFile) {
+  //       const uploadResponse = await uploadAvatar(avatarFile);
+  //       avatarUrl = uploadResponse.avatar_url;
+  //       console.log("Avatar uploaded:", avatarUrl);
+  //     }
+      
+  //     // 2. Update profile data dengan avatar_url
+  //     await updateProfile({
+  //       ...formData,
+  //       avatarUrl: avatarUrl
+  //     });
+      
+  //     toast({ title: 'Profil berhasil disimpan!', description: 'Anda dapat mulai mencari tim.' });
+  //     navigate('/dashboard');
+      
+  //   } catch (error) {
+  //     console.error("Profile update failed:", error);
+  //     toast({
+  //       title: 'Gagal Menyimpan',
+  //       description: error.response?.data?.detail || 'Terjadi kesalahan saat menyimpan profil.',
+  //       variant: 'destructive'
+  //     });
+      
+  //     // BUKA KUNCI: Hanya jika gagal, supaya user bisa coba lagi
+  //     // Jika sukses, kita pindah halaman (unmount), jadi tidak perlu set false
+  //     isSubmitting.current = false;
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    e.stopPropagation(); // Hentikan event bubbling
-    
-    // GUARD: Jika sedang submitting (terkunci), hentikan eksekusi segera!
-    if (isSubmitting.current) return;
+  e.preventDefault();
+  e.stopPropagation();
 
-    if (!formData.name || !formData.birthdate || !formData.role || formData.skills.length === 0) {
-      toast({
-        title: 'Data tidak lengkap',
-        description: 'Silakan lengkapi semua field.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // KUNCI PINTU: Set ref true agar klik berikutnya ditolak
-    isSubmitting.current = true;
-    setLoading(true);
+  if (isSubmitting.current) return;
 
-    try {
-      let avatarUrl = "";
-      
-      // 1. Upload avatar dulu jika ada file baru
-      if (avatarFile) {
-        const uploadResponse = await uploadAvatar(avatarFile);
-        avatarUrl = uploadResponse.avatar_url;
-        console.log("Avatar uploaded:", avatarUrl);
-      }
-      
-      // 2. Update profile data dengan avatar_url
-      await updateProfile({
-        ...formData,
-        avatarUrl: avatarUrl
-      });
-      
-      toast({ title: 'Profil berhasil disimpan!', description: 'Anda dapat mulai mencari tim.' });
-      navigate('/dashboard');
-      
-    } catch (error) {
-      console.error("Profile update failed:", error);
-      toast({
-        title: 'Gagal Menyimpan',
-        description: error.response?.data?.detail || 'Terjadi kesalahan saat menyimpan profil.',
-        variant: 'destructive'
-      });
-      
-      // BUKA KUNCI: Hanya jika gagal, supaya user bisa coba lagi
-      // Jika sukses, kita pindah halaman (unmount), jadi tidak perlu set false
-      isSubmitting.current = false;
-      setLoading(false);
+  if (!formData.name || !formData.birthdate || !formData.role || formData.skills.length === 0) {
+    toast({
+      title: 'Data tidak lengkap',
+      description: 'Silakan lengkapi semua field.',
+      variant: 'destructive'
+    });
+    return;
+  }
+
+  isSubmitting.current = true;
+  setLoading(true);
+
+  try {
+    // 1️⃣ CREATE PROFILE DULU (TANPA AVATAR)
+    await updateProfile({
+      name: formData.name,
+      birthdate: formData.birthdate,
+      role: formData.role,
+      skills: formData.skills
+    });
+
+    // 2️⃣ BARU upload avatar (JIKA ADA)
+    if (avatarFile) {
+      const uploadResponse = await uploadAvatar(avatarFile);
+      console.log("Avatar uploaded:", uploadResponse.avatar_url);
     }
-  };
+
+    toast({
+      title: 'Profil berhasil disimpan!',
+      description: 'Anda dapat mulai mencari tim.'
+    });
+
+    navigate('/dashboard');
+
+  } catch (error) {
+    console.error("Profile update failed:", error);
+
+    toast({
+      title: 'Gagal Menyimpan',
+      description: error.response?.data?.detail || 'Terjadi kesalahan saat menyimpan profil.',
+      variant: 'destructive'
+    });
+
+    isSubmitting.current = false;
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-8">
