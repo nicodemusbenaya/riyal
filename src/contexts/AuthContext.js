@@ -109,8 +109,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = () => {
-    // Pastikan port backend benar (8000)
-    window.location.href = 'http://localhost:8000/auth/google/login';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+    window.location.href = `${backendUrl}/auth/google/login`;
   };
 
   const uploadAvatar = async (imageFile) => {
