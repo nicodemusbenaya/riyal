@@ -14,7 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
@@ -29,6 +29,7 @@ const ProfileSetup = () => {
     avatar: user?.avatar || ''
   });
   
+  const [avatarFile, setAvatarFile] = useState(null);
   const [skillInput, setSkillInput] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +46,10 @@ const ProfileSetup = () => {
         return;
       }
 
+      // Simpan file untuk diupload nanti
+      setAvatarFile(file);
+      
+      // Preview gambar
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({
@@ -95,8 +100,20 @@ const ProfileSetup = () => {
     setLoading(true);
 
     try {
-      // updateProfile di AuthContext akan menyimpan data
-      await updateProfile(formData);
+      let avatarUrl = "";
+      
+      // 1. Upload avatar dulu jika ada file baru
+      if (avatarFile) {
+        const uploadResponse = await uploadAvatar(avatarFile);
+        avatarUrl = uploadResponse.avatar_url;
+        console.log("Avatar uploaded:", avatarUrl);
+      }
+      
+      // 2. Update profile data dengan avatar_url
+      await updateProfile({
+        ...formData,
+        avatarUrl: avatarUrl
+      });
       
       toast({ title: 'Profil berhasil disimpan!', description: 'Anda dapat mulai mencari tim.' });
       navigate('/dashboard');
@@ -105,7 +122,7 @@ const ProfileSetup = () => {
       console.error("Profile update failed:", error);
       toast({
         title: 'Gagal Menyimpan',
-        description: 'Terjadi kesalahan saat menyimpan profil.',
+        description: error.response?.data?.detail || 'Terjadi kesalahan saat menyimpan profil.',
         variant: 'destructive'
       });
       

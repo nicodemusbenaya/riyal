@@ -113,15 +113,43 @@ export const AuthProvider = ({ children }) => {
     window.location.href = 'http://localhost:8000/auth/google/login';
   };
 
+  const uploadAvatar = async (imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const response = await api.post('/profile/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error("Upload avatar error:", error);
+      throw error;
+    }
+  };
+
   const updateProfile = async (profileData) => {
     try {
+      // Format skill menjadi string sesuai backend API
+      let skillString = "";
+      if (Array.isArray(profileData.skills)) {
+        skillString = profileData.skills.join(',');
+      } else if (typeof profileData.skills === 'string') {
+        skillString = profileData.skills;
+      }
+
       const payload = {
         name: profileData.name,
         birthdate: profileData.birthdate,
         role: profileData.role,
-        skill: Array.isArray(profileData.skills) ? profileData.skills.join(',') : profileData.skills,
-        pict: profileData.avatar || ""
+        skill: skillString,
+        pict: profileData.avatarUrl || ""
       };
+
+      console.log("Sending profile payload:", payload); // Debug log
 
       if (user?.profileComplete) {
          await api.put('/profile/', payload);
@@ -151,6 +179,7 @@ export const AuthProvider = ({ children }) => {
       loginWithGoogle,
       register,
       updateProfile,
+      uploadAvatar,
       fetchUserProfile,
       logout
     }}>
