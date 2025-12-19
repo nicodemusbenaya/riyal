@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoom } from '../contexts/RoomContext';
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
-import { Tag, Users, LogOut, Loader2, Zap, Settings, UserCircle, ArrowRight } from 'lucide-react';
+import { Tag, Users, LogOut, Loader2, Zap, Settings, UserCircle, ArrowRight, CheckCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
 const Dashboard = () => {
@@ -17,12 +17,24 @@ const Dashboard = () => {
   // Destructure dengan nilai default aman
   const { 
     startMatchmaking, 
+    cancelMatchmaking,
     matchmakingStatus = 'idle', 
     roomHistory = [], 
     activeRoom 
   } = useRoom();
   
   const { toast } = useToast();
+
+  // Auto-navigate ke room saat match ditemukan
+  useEffect(() => {
+    if (activeRoom && matchmakingStatus === 'matched') {
+      // Delay sedikit agar user bisa lihat pesan "Tim Ditemukan"
+      const timer = setTimeout(() => {
+        navigate('/room');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRoom, matchmakingStatus, navigate]);
 
   const handleStartMatchmaking = () => {
     startMatchmaking();
@@ -173,10 +185,25 @@ const Dashboard = () => {
                       </Button>
                     )}
                     {matchmakingStatus === 'searching' && (
-                      <div className="flex flex-col items-center py-2 animate-pulse">
+                      <div className="flex flex-col items-center py-2">
                         <Loader2 className="h-12 w-12 text-cyan-500 mb-4 animate-spin" />
-                        <p className="text-cyan-700 font-medium bg-cyan-50 px-4 py-2 rounded-lg">
+                        <p className="text-cyan-700 font-medium bg-cyan-50 px-4 py-2 rounded-lg mb-4">
                           Sedang mencari rekan tim...
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={cancelMatchmaking}
+                        >
+                          Batalkan Pencarian
+                        </Button>
+                      </div>
+                    )}
+                    {matchmakingStatus === 'matched' && (
+                      <div className="flex flex-col items-center py-2">
+                        <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                        <p className="text-green-700 font-medium bg-green-50 px-4 py-2 rounded-lg mb-4">
+                          Tim ditemukan! Mengalihkan...
                         </p>
                       </div>
                     )}
