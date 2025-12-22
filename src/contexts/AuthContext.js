@@ -18,11 +18,14 @@ export const AuthProvider = ({ children }) => {
   // FUNGSI UTAMA: Ambil data profil
   const fetchUserProfile = async () => {
     const token = localStorage.getItem('token');
+    console.log('[AUTH] fetchUserProfile called, token:', token ? 'exists' : 'missing');
     if (!token) return false;
 
     try {
+      console.log('[AUTH] Calling GET /profile/me...');
       const response = await api.get('/profile/me');
       const profileData = response.data;
+      console.log('[AUTH] Profile data received:', profileData);
 
       const formattedUser = {
         id: profileData.user_id,
@@ -37,13 +40,15 @@ export const AuthProvider = ({ children }) => {
 
       setUser(formattedUser);
       localStorage.setItem('currentUser', JSON.stringify(formattedUser));
+      console.log('[AUTH] User set successfully:', formattedUser.name);
       return true; 
     } catch (error) {
+      console.log('[AUTH] fetchUserProfile error:', error.response?.status, error.response?.data);
       // PERBAIKAN PENTING DI SINI:
       // Jika error 404 (Profil belum ada), kita JANGAN biarkan user null.
       // Kita buat object user sementara agar tidak ditendang ke Login.
       if (error.response && error.response.status === 404) {
-         console.log("User login, but no profile yet.");
+         console.log("[AUTH] User login, but no profile yet.");
          const incompleteUser = { profileComplete: false };
          setUser(incompleteUser);
          // Kita return true (artinya "Auth Sukses", meski profil belum ada)
@@ -53,6 +58,7 @@ export const AuthProvider = ({ children }) => {
       
       // Jika error 401 (Token Invalid), baru kita return false
       if (error.response && error.response.status === 401) {
+          console.log('[AUTH] Token invalid, removing...');
           localStorage.removeItem('token');
           setUser(null);
       }
@@ -63,26 +69,34 @@ export const AuthProvider = ({ children }) => {
   // Cek Auth saat aplikasi dibuka
   useEffect(() => {
     const initAuth = async () => {
+      console.log('[AUTH] initAuth() called');
       const token = localStorage.getItem('token');
+      console.log('[AUTH] Token on init:', token ? 'exists' : 'missing');
       if (token) {
         await fetchUserProfile();
       }
       setLoading(false);
+      console.log('[AUTH] initAuth() completed, loading set to false');
     };
     initAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
+      console.log('[AUTH] login() called with email:', email);
       const response = await api.post('/auth/login', { email, password });
       const { access_token } = response.data;
+      console.log('[AUTH] login response, token:', access_token ? 'received' : 'missing');
 
       localStorage.setItem('token', access_token);
+      console.log('[AUTH] Token saved to localStorage');
+      
       await fetchUserProfile(); // Ambil profil segera
+      console.log('[AUTH] fetchUserProfile completed');
 
       return { success: true };
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("[AUTH] Login error:", error);
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Gagal login.' 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import api, { SOCKET_URL, getRoomHistory } from "@/services/api";
+import api, { SOCKET_URL, getRoomHistory, MockWebSocket, MOCK_MODE } from "@/services/api";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,6 +20,7 @@ export const RoomProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [roomHistory, setRoomHistory] = useState([]);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [isNewMatch, setIsNewMatch] = useState(false);
 
   const socketRef = useRef(null);
   const pollingRef = useRef(null);
@@ -47,6 +48,7 @@ export const RoomProvider = ({ children }) => {
 
     try {
       setIsReconnecting(true);
+      setIsNewMatch(false);
       const parsed = JSON.parse(saved);
 
       const res = await api.get(`/rooms/${parsed.id}`);
@@ -133,6 +135,7 @@ export const RoomProvider = ({ children }) => {
   const handleMatchFound = async (roomId, roomData, isReconnect = false) => {
     setMatchmakingStatus("matched");
     setIsReconnecting(false);
+    setIsNewMatch(!isReconnect);
 
     let detail = roomData;
     if (!roomData.members) {
@@ -165,9 +168,9 @@ export const RoomProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const ws = new WebSocket(
-      `${SOCKET_URL}/ws/rooms/${roomId}?token=${token}`
-    );
+    // Gunakan MockWebSocket jika mock mode aktif
+    const wsUrl = `${SOCKET_URL}/ws/rooms/${roomId}?token=${token}`;
+    const ws = MOCK_MODE ? new MockWebSocket(wsUrl) : new WebSocket(wsUrl);
 
     ws.onopen = () => {
       if (!isReconnect) {
@@ -218,6 +221,7 @@ export const RoomProvider = ({ children }) => {
     setActiveRoom(null);
     setMessages([]);
     setMatchmakingStatus("idle");
+    setIsNewMatch(false);
     localStorage.removeItem("activeRoom");
 
     setTimeout(() => (hasLeftRoomRef.current = false), 500);
@@ -241,9 +245,14 @@ export const RoomProvider = ({ children }) => {
     setActiveRoom(null);
     setMessages([]);
     setMatchmakingStatus("idle");
+    setIsNewMatch(false);
     localStorage.removeItem("activeRoom");
 
     setTimeout(() => (hasLeftRoomRef.current = false), 500);
+  };
+
+  const clearAutoNavigate = () => {
+    setIsNewMatch(false);
   };
 
   /* ===========================
@@ -257,11 +266,13 @@ export const RoomProvider = ({ children }) => {
         messages,
         roomHistory,
         isReconnecting,
+        isNewMatch,
         startMatchmaking,
         sendMessage,
         leaveRoom,
         endSession,
         fetchRoomHistory,
+        clearAutoNavigate,
       }}
     >
       {children}

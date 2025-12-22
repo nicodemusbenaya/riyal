@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
 import { ROLES } from '../mock/mockData';
-import { User, Calendar, Briefcase, Tag, X, Camera } from 'lucide-react';
+import { User, Calendar, Briefcase, Tag, X, Camera, UserCircle } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 
@@ -189,15 +189,24 @@ const ProfileSetup = () => {
 };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-8">
-      <Card className="w-full max-w-2xl shadow-sm border border-slate-100 rounded-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 via-white to-teal-50 px-4 py-8">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      </div>
+      
+      <Card className="w-full max-w-2xl shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl relative z-10">
         <CardHeader className="space-y-3 text-center pb-6">
-          <div className="mx-auto">
-            <h1 className="text-3xl font-bold text-cyan-600 mb-1">TeamSync</h1>
+          <div className="mx-auto mb-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto">
+              <UserCircle className="h-7 w-7 text-white" />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Lengkapi Profil</CardTitle>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 bg-clip-text text-transparent">GroupMatch</h1>
+          <CardTitle className="text-xl font-bold text-slate-800">Lengkapi Profilmu</CardTitle>
           <CardDescription className="text-slate-500">
-            Berikan informasi tentang diri Anda untuk matchmaking yang lebih baik
+            Informasi ini membantu kami menemukan tim yang tepat untukmu
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6 pb-6">
