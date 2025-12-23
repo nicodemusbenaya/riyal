@@ -150,7 +150,7 @@ const Room = () => {
             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
               <span className="text-xs text-slate-500">Room:</span>
               <code className="text-sm font-mono font-medium text-slate-700">
-                {activeRoom.id?.slice(-8)}
+                {activeRoom.id ? String(activeRoom.id).slice(-8) : '...'}
               </code>
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleCopyRoomId}>
                 <Copy className="h-3 w-3" />
@@ -160,7 +160,7 @@ const Room = () => {
           <div className="flex items-center gap-2">
             <Badge className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-0 shadow-sm">
               <Users className="h-3 w-3 mr-1" />
-              {activeRoom.members.length} Anggota
+              {activeRoom.members?.length || 0} Anggota
             </Badge>
           </div>
         </div>
@@ -194,11 +194,16 @@ const Room = () => {
         <div className="w-72 hidden md:flex bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100 shadow-lg flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-cyan-50 to-teal-50">
             <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-              <Users className="h-4 w-4 text-cyan-600" /> Anggota Tim
+              <Users className="h-4 w-4 text-cyan-600" /> Anggota Tim ({activeRoom.members?.length || 0})
             </h3>
           </div>
           <div className="flex-1 p-3 space-y-2 overflow-y-auto">
-            {activeRoom.members.map((m) => (
+            {(!activeRoom.members || activeRoom.members.length === 0) && (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-400">Memuat anggota...</p>
+              </div>
+            )}
+            {(activeRoom.members || []).map((m) => (
               <div 
                 key={m.id} 
                 className={`flex gap-3 p-3 rounded-xl transition-all ${
@@ -215,16 +220,17 @@ const Room = () => {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-700 truncate flex items-center gap-1">
-                    {m.name}
+                    {m.id === user?.id ? (
+                      <span className="text-cyan-600">(Kamu)</span>
+                    ) : (
+                      m.name || m.username || `User ${String(m.id).slice(-4)}`
+                    )}
                     {m.id === activeRoom.leaderId && (
                       <Crown className="h-3.5 w-3.5 text-amber-500" />
                     )}
-                    {m.id === user?.id && (
-                      <span className="text-xs text-cyan-600 font-normal">(Kamu)</span>
-                    )}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
-                    {m.role || 'Member'}
+                    {m.role || 'Member'}{m.username && ` • @${m.username}`}
                   </p>
                 </div>
               </div>

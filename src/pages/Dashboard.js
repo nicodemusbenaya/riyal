@@ -167,11 +167,8 @@ const Dashboard = () => {
                 </Button>
               ) : matchmakingStatus === 'searching' ? (
                 <div className="text-center space-y-4">
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full border-4 border-cyan-100 flex items-center justify-center">
-                      <Loader2 className="h-10 w-10 animate-spin text-cyan-600" />
-                    </div>
-                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500 animate-spin"></div>
+                  <div className="w-20 h-20 rounded-full border-4 border-cyan-100 flex items-center justify-center mx-auto">
+                    <Loader2 className="h-10 w-10 animate-spin text-cyan-600" />
                   </div>
                   <p className="text-slate-600 font-medium">Mencari tim untukmu...</p>
                   <Button variant="outline" onClick={leaveRoom} className="mt-2">
@@ -233,7 +230,7 @@ const Dashboard = () => {
                             <Users className="h-5 w-5 text-cyan-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-slate-700">Room #{r.room_id?.slice(-6) || index + 1}</p>
+                            <p className="font-medium text-slate-700">Room #{r.room_id ? String(r.room_id).slice(-6) : index + 1}</p>
                             <p className="text-xs text-slate-500">{r.action}</p>
                           </div>
                         </div>

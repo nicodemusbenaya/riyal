@@ -97,7 +97,15 @@ export const RoomProvider = ({ children }) => {
       const res = await api.post("/matchmaking/join");
 
       if (res.data?.room_id) {
+        // Match langsung ditemukan
         handleMatchFound(res.data.room_id, res.data);
+      } else if (res.data?.status === "waiting") {
+        // Masih menunggu user lain
+        startPolling();
+        toast({
+          title: "Menunggu user lain",
+          description: res.data.message || "Menunggu user lain bergabung ke antrian...",
+        });
       } else {
         startPolling();
         toast({
@@ -121,7 +129,7 @@ export const RoomProvider = ({ children }) => {
     pollingRef.current = setInterval(async () => {
       try {
         const res = await api.get("/matchmaking/status");
-        if (res.data?.status === "matched") {
+        if (res.data?.status === "matched" && res.data?.room_id) {
           clearInterval(pollingRef.current);
           handleMatchFound(res.data.room_id, res.data);
         }
@@ -133,32 +141,39 @@ export const RoomProvider = ({ children }) => {
      MATCH FOUND
   ============================ */
   const handleMatchFound = async (roomId, roomData, isReconnect = false) => {
+    console.log('[RoomContext] handleMatchFound called with:', { roomId, roomData, isReconnect });
+    
     setMatchmakingStatus("matched");
     setIsReconnecting(false);
     setIsNewMatch(!isReconnect);
 
     let detail = roomData;
     if (!roomData.members) {
+      console.log('[RoomContext] No members in roomData, fetching from API...');
       const res = await api.get(`/rooms/${roomId}`);
       detail = res.data;
+      console.log('[RoomContext] Fetched room detail:', detail);
     }
 
-    setActiveRoom({
-      id: detail.id,
+    const activeRoomData = {
+      id: detail.id || roomId,
       leaderId: detail.leader_id,
       status: detail.status,
-      members: detail.members.map((m) => ({
-        id: m.user_id,
-        name: m.name || m.username,
-        username: m.username,
+      members: (detail.members || []).map((m) => ({
+        id: m.user_id || m.id,
+        name: m.name || m.username || m.user_name,
+        username: m.username || m.user_name || m.name,
         role: m.role,
         avatar:
-          m.pict ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.username}`,
+          m.pict || m.avatar || m.picture ||
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.username || m.user_id || m.id}`,
       })),
-    });
+    };
+    
+    console.log('[RoomContext] Setting activeRoom:', activeRoomData);
+    setActiveRoom(activeRoomData);
 
-    connectWebSocket(roomId, isReconnect);
+    connectWebSocket(roomId || detail.id, isReconnect);
   };
 
   /* ===========================
@@ -173,6 +188,7 @@ export const RoomProvider = ({ children }) => {
     const ws = MOCK_MODE ? new MockWebSocket(wsUrl) : new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      console.log('[RoomContext] WebSocket connected, readyState:', ws.readyState);
       if (!isReconnect) {
         toast({
           title: "Tim terbentuk",
@@ -182,8 +198,28 @@ export const RoomProvider = ({ children }) => {
     };
 
     ws.onmessage = (e) => {
+      console.log('[RoomContext] WebSocket message received:', e.data);
       const payload = JSON.parse(e.data);
+      
       if (payload.type === "chat") {
+        console.log('[RoomContext] Adding chat message:', payload.data);
+        
+        // Update member username jika belum ada
+        const chatUserId = payload.data.user_id;
+        const chatUsername = payload.data.username;
+        if (chatUserId && chatUsername) {
+          setActiveRoom((prevRoom) => {
+            if (!prevRoom) return prevRoom;
+            const updatedMembers = prevRoom.members.map((m) => {
+              if (String(m.id) === String(chatUserId) && (!m.username || m.username.startsWith('User '))) {
+                return { ...m, username: chatUsername, name: chatUsername };
+              }
+              return m;
+            });
+            return { ...prevRoom, members: updatedMembers };
+          });
+        }
+        
         setMessages((prev) => [
           ...prev,
           {
@@ -193,6 +229,25 @@ export const RoomProvider = ({ children }) => {
             text: payload.data.text,
           },
         ]);
+      } else if (payload.type === "users_list" && payload.data) {
+        // Update member list dengan data dari WebSocket
+        setActiveRoom((prevRoom) => {
+          if (!prevRoom) return prevRoom;
+          const updatedMembers = prevRoom.members.map((m) => {
+            const wsUser = payload.data.find((u) => String(u.user_id) === String(m.id));
+            if (wsUser) {
+              return {
+                ...m,
+                username: wsUser.username || m.username,
+                name: wsUser.name || wsUser.username || m.name,
+                role: wsUser.role || m.role,
+                avatar: wsUser.pict || m.avatar,
+              };
+            }
+            return m;
+          });
+          return { ...prevRoom, members: updatedMembers };
+        });
       }
     };
 
@@ -201,8 +256,15 @@ export const RoomProvider = ({ children }) => {
   };
 
   const sendMessage = (text) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
+    console.log('[RoomContext] sendMessage called with:', text);
+    console.log('[RoomContext] socketRef.current:', socketRef.current);
+    console.log('[RoomContext] readyState:', socketRef.current?.readyState);
+    
+    if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === 1)) {
+      console.log('[RoomContext] Sending message...');
       socketRef.current.send(JSON.stringify({ type: "chat", text }));
+    } else {
+      console.log('[RoomContext] WebSocket not ready, cannot send');
     }
   };
 

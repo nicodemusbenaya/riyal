@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { RoomProvider } from "./contexts/RoomContext";
 import { Toaster } from "./components/ui/sonner";
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProfileSetup from "./pages/ProfileSetup";
@@ -111,9 +112,16 @@ function App() {
               }
             />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* Landing Page - redirect to dashboard if logged in */}
+            <Route
+              path="/"
+              element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
         <Toaster />
